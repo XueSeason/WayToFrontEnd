@@ -239,9 +239,139 @@ var foo = function bar() {
 bar(); // 出错：ReferenceError
 ```
 
-bar 函数声明外是不可见的，这是因为我们已经把函数赋值给了 foo； 然而在 bar 内部依然可见。这是由于 JavaScript 的 命名处理 所致， 函数名在函数内总是可见的。
+bar 函数声明外是不可见的，这是因为我们已经把函数赋值给了 foo； 然而在 bar 内部依然可见。这是由于 JavaScript 的 命名处理 所致， 函数名在函数内总是可见的。  
+
+注意:在IE8及IE8以下版本浏览器bar在外部也是可见的，是因为浏览器对命名函数赋值表达式进行了错误的解析，解析成两个函数 foo 和 bar。  
 
 ## this 的工作原理
 
+JS 和其它语言的 this 机制完全不同。
 
+### 全局范围内
 
+```
+this
+```
+
+当全局范围内使用 this，它将会指向全局对象。
+
+### 函数调用
+
+```
+foo();
+```
+
+这里的 this 也指向全局对象。  
+在浏览器中，这个全局对象是 window。  
+
+### 方法调用
+
+```
+test.foo();
+```
+
+this 指向 test 对象。  
+
+### 调用构造函数
+
+```
+new foo();
+```
+
+this 指向新创建的对象。
+
+### 显式设置 this
+
+```
+function foo(a, b, c) {}
+
+var bar = {};
+foo.apply(bar, [1, 2, 3]); // 数组将会被扩展，如下所示
+foo.call(bar, 1, 2, 3); // 传递到foo的参数是：a = 1, b = 2, c = 3
+```
+
+当使用 Function.prototype 上的 call 或者 apply 方法时，函数内的 this 将会被 显式设置为函数调用的第一个参数。  
+
+关于 call 和 apply 的理解可以查看如下代码
+
+```
+function add(a, b){console.dir(this);}
+
+function sub(a, b){console.dir(this);}
+
+add(1,2);
+"Window"
+
+sub(1,2);
+"Window"
+
+add.call(sub, 1, 2);
+"sub(a, b)"
+
+sub.apply(add, [1, 2]);
+"add(a, b)"
+
+作者：杨佰
+链接：https://www.zhihu.com/question/20289071/answer/62582198
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+```
+
+### 常见的误解
+
+直接调用函数时，this 指向全局对象
+
+```
+Foo.method = function() {
+    function test() {
+        // this 将会被设置为全局对象（译者注：浏览器环境中也就是 window 对象）
+    }
+    test();
+}
+```
+
+为了在 test 中获取对 Foo 对象的引用，我们需要在 method 函数内部创建一个局部变量指向 Foo 对象。
+
+```
+Foo.method = function() {
+    var that = this;
+    function test() {
+        // 使用 that 来指向 Foo 对象
+    }
+    test();
+}
+```
+
+### 方法的赋值表达式
+
+```
+var test = someObject.methodTest;
+test();
+```
+
+test 就像一个普通的函数被调用；因此，函数内的 this 将不再被指向到 someObject 对象。
+
+## 闭包和引用
+
+闭包是 JavaScript 一个非常重要的特性，这意味着当前作用域总是能够访问外部作用域中的变量。 
+
+### 模拟私有变量
+
+```
+function Counter(start) {
+    var count = start;
+    return {
+        increment: function() {
+            count++;
+        },
+
+        get: function() {
+            return count;
+        }
+    }
+}
+
+var foo = Counter(4);
+foo.increment();
+foo.get(); // 5
+```
